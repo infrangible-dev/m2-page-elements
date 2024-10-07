@@ -1,0 +1,22 @@
+/**
+ * @author      Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
+ * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ */
+
+//noinspection LessUnresolvedVariable
+.media-width(@extremum, @break) when (@extremum = 'min') and (@break = @screen__m) {
+    .page-layout-2columns-left {
+        .page-wrapper {
+            main.page-main {
+                .columns {
+                    .column.main:only-child {
+                        float: none;
+                        width: 100%;
+                        padding-left: 0;
+                    }
+                }
+            }
+        }
+    }
+}

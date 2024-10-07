@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+
+<!--
+ * @author      Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
+ * @license     http://www.opensource.org/licenses/mit-license.php MIT
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Magento\Catalog\Block\Product\ListProduct">
+        <plugin name="infrangible_pageelements" type="Infrangible\PageElements\Plugin\Catalog\Block\Product\ListProduct"/>
+    </type>
+    <type name="Magento\Catalog\Block\Product\View">
+        <plugin name="infrangible_pageelements" type="Infrangible\PageElements\Plugin\Catalog\Block\Product\View"/>
+    </type>
+    <type name="Magento\Catalog\ViewModel\Product\Checker\AddToCompareAvailability">
+        <plugin name="infrangible_pageelements" type="Infrangible\PageElements\Plugin\Catalog\ViewModel\Product\Checker\AddToCompareAvailability"/>
+    </type>
+    <type name="Magento\CatalogWidget\Block\Product\ProductsList">
+        <plugin name="infrangible_pageelements" type="Infrangible\PageElements\Plugin\CatalogWidget\Block\Product\ProductsList"/>
+    </type>
+    <type name="Magento\Framework\View\Layout">
+        <plugin name="infrangible_pageelements" type="Infrangible\PageElements\Plugin\Framework\View\Layout"/>
+    </type>
+    <type name="Magento\Framework\View\Result\Page">
+        <plugin name="infrangible_pageelements" type="Infrangible\PageElements\Plugin\Framework\View\Result\Page"/>
+    </type>
+</config>
