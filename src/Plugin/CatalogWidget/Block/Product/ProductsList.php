@@ -2,36 +2,41 @@
 
 declare(strict_types=1);
 
-namespace Infrangible\PageElements\Plugin\CatalogWidget\Block\Product;
-
-use Infrangible\Core\Helper\Stores;
-
 /**
  * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
  * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ */
+
+namespace Infrangible\PageElements\Plugin\CatalogWidget\Block\Product;
+
+use Infrangible\PageElements\Helper\Data;
+use Magento\CatalogWidget\Block\Product\ProductsList as Widget;
+
+/**
+ * Hides the links to compare products in the product list widget.
  */
 class ProductsList
 {
-    /** @var Stores */
-    protected $storesHelper;
-
-    public function __construct(Stores $storesHelper)
+    /**
+     * @param Data $helper
+     */
+    public function __construct(protected Data $helper)
     {
-        $this->storesHelper = $storesHelper;
     }
 
     /**
-     * @noinspection PhpUnusedParameterInspection
+     * The widget gets no URL to compare products if the setting "Hide Compare" is switched on, so it shows no link.
+     *
+     * @param Widget $subject
+     * @param string $result
+     *
+     * @return string
+     *
+     * @noinspection PhpUnusedParameterInspection the signature of the plugin is given
      */
-    public function aroundGetAddToCompareUrl(
-        \Magento\CatalogWidget\Block\Product\ProductsList $subject,
-        callable $proceed
-    ): string {
-        if ($this->storesHelper->getStoreConfigFlag('infrangible_pageelements/product/hide_compare')) {
-            return '';
-        }
-
-        return $proceed();
+    public function afterGetAddToCompareUrl(Widget $subject, string $result): string
+    {
+        return $this->helper->isEnabled('product/hide_compare') ? '' : $result;
     }
 }

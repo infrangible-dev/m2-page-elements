@@ -2,201 +2,110 @@
 
 declare(strict_types=1);
 
+/**
+ * @author      Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
+ * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ */
+
 namespace Infrangible\PageElements\Observer;
 
-use Infrangible\Core\Helper\Stores;
+use Infrangible\PageElements\Helper\Data;
 use Magento\Checkout\Block\Cart\Sidebar;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\View\Element\AbstractBlock;
 use Magento\Framework\View\Element\Template;
 use Magento\Store\Block\Switcher;
 use Magento\Theme\Block\Html\Header\Logo;
 
 /**
- * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
- * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ * Hides blocks of the page whose setting is switched on, by removing their template before they are rendered.
  */
 class ViewBlockAbstractToHtmlBefore implements ObserverInterface
 {
-    /** @var Stores */
-    protected $storesHelper;
+    /**
+     * The blocks that can be hidden: by name in the layout, the settings that hide them, each with the page handle it
+     * is restricted to (null for every page), and the class the block must have.
+     */
+    private const BLOCKS = [
+        'logo'                                => [['header/hide_logo', null, Logo::class]],
+        'top.search'                          => [['header/hide_search', null, Template::class]],
+        'minicart'                            => [['header/hide_minicart', null, Sidebar::class]],
+        'navigation.sections'                 => [['navigation/hide_navigation', null, Template::class]],
+        'store_switcher'                      => [['footer/hide_store_switcher', null, Switcher::class]],
+        'copyright'                           => [['copyright/hide_copyright', null, Template::class]],
+        'breadcrumbs'                         => [['breadcrumbs/hide_breadcrumbs', null, Template::class]],
+        'page.main.title'                     => [
+            ['page_title/hide_page_title', null, Template::class],
+            ['category/hide_page_title', 'catalog_category_view', Template::class],
+            ['catalog_search/hide_page_title', 'catalogsearch_result_index', Template::class],
+            ['product/hide_page_title', 'catalog_product_view', Template::class]
+        ],
+        'catalog.leftnav'                     => [['category/hide_sidebar', null, Template::class]],
+        'catalogsearch.leftnav'               => [['catalog_search/hide_sidebar', null, Template::class]],
+        'catalog.compare.sidebar'             => [['product/hide_compare', null, Template::class]],
+        'category.product.addto.compare'      => [['product/hide_compare', null, Template::class]],
+        'catalogsearch.product.addto.compare' => [['product/hide_compare', null, Template::class]],
+        'catalog.product.related'             => [['product/hide_related', null, Template::class]],
+        'product.info.upsell'                 => [['product/hide_upsell', null, Template::class]],
+        'product.info.sku'                    => [['product/hide_sku', null, Template::class]],
+        'product.info.simple'                 => [['product/hide_stock', null, Template::class]],
+        'product.info.configurable'           => [['product/hide_stock', null, Template::class]],
+        'product.info.grouped.stock'          => [['product/hide_stock', null, Template::class]],
+        'product.info.bundle'                 => [['product/hide_stock', null, Template::class]],
+        'product.info.virtual'                => [['product/hide_stock', null, Template::class]],
+        'product.info.downloadable'           => [['product/hide_stock', null, Template::class]],
+        'checkout.cart.crosssell'             => [['cart/hide_crosssell', null, Template::class]]
+    ];
 
-    public function __construct(Stores $storesHelper)
+    /**
+     * @param Data $helper
+     */
+    public function __construct(protected Data $helper)
     {
-        $this->storesHelper = $storesHelper;
     }
 
     /**
-     * @throws LocalizedException
+     * Removes the template of the block if one of its settings is switched on, so that it renders nothing.
+     *
+     * @param Observer $observer
+     *
+     * @return void
      */
     public function execute(Observer $observer): void
     {
-        /** @var AbstractBlock $block */
         $block = $observer->getEvent()->getData('block');
 
-        $layout = $block->getLayout();
-        $nameInLayout = $block->getNameInLayout();
-
-        $hideLogo = $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/header/hide_logo');
-
-        if ($hideLogo && $nameInLayout === 'logo' && $block instanceof Logo) {
-            $block->setTemplate(null);
+        if (! $block instanceof Template) {
+            return;
         }
 
-        $hideSearch = $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/header/hide_search');
+        foreach (self::BLOCKS[ $block->getNameInLayout() ] ?? [] as [$setting, $handle, $className]) {
+            if ($block instanceof $className && $this->helper->isEnabled($setting) &&
+                ($handle === null || $this->hasHandle($block, $handle))) {
 
-        if ($hideSearch && $nameInLayout === 'top.search' && $block instanceof Template) {
-            $block->setTemplate(null);
+                $block->setTemplate('');
+
+                return;
+            }
         }
+    }
 
-        $hideMinicart = $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/header/hide_minicart');
-
-        if ($hideMinicart && $nameInLayout === 'minicart' && $block instanceof Sidebar) {
-            $block->setTemplate(null);
-        }
-
-        $hideNavigation =
-            $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/navigation/hide_navigation');
-
-        if ($hideNavigation && $nameInLayout === 'navigation.sections' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideStoreSwitcher =
-            $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/footer/hide_store_switcher');
-
-        if ($hideStoreSwitcher && $nameInLayout === 'store_switcher' && $block instanceof Switcher) {
-            $block->setTemplate(null);
-        }
-
-        $hideCopyright = $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/copyright/hide_copyright');
-
-        if ($hideCopyright && $nameInLayout === 'copyright' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hidePageTitle = $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/page_title/hide_page_title');
-
-        if ($hidePageTitle && $nameInLayout === 'page.main.title' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideBreadcrumbs =
-            $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/breadcrumbs/hide_breadcrumbs');
-
-        if ($hideBreadcrumbs && $nameInLayout === 'breadcrumbs' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideCategoryPageTitle =
-            $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/category/hide_page_title');
-
-        if ($hideCategoryPageTitle && in_array(
-                'catalog_category_view',
-                $layout->getUpdate()->getHandles()
-            ) && $nameInLayout === 'page.main.title' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideCategorySidebar =
-            $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/category/hide_sidebar');
-
-        if ($hideCategorySidebar && $nameInLayout === 'catalog.leftnav' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideSearchPageTitle =
-            $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/catalog_search/hide_page_title');
-
-        if ($hideSearchPageTitle && in_array(
-                'catalogsearch_result_index',
-                $layout->getUpdate()->getHandles()
-            ) && $nameInLayout === 'page.main.title' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideSearchSidebar =
-            $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/catalog_search/hide_sidebar');
-
-        if ($hideSearchSidebar && $nameInLayout === 'catalogsearch.leftnav' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideProductPageTitle =
-            $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/product/hide_page_title');
-
-        if ($hideProductPageTitle && in_array(
-                'catalog_product_view',
-                $layout->getUpdate()->getHandles()
-            ) && $nameInLayout === 'page.main.title' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideCompare = $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/product/hide_compare');
-
-        if ($hideCompare && $nameInLayout === 'catalog.compare.sidebar' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        if ($hideCompare && $nameInLayout === 'category.product.addto.compare' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        if ($hideCompare && $nameInLayout === 'catalogsearch.product.addto.compare' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideRelated = $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/product/hide_related');
-
-        if ($hideRelated && $nameInLayout === 'catalog.product.related' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideUpsell = $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/product/hide_upsell');
-
-        if ($hideUpsell && $nameInLayout === 'product.info.upsell' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideSku = $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/product/hide_sku');
-
-        if ($hideSku && $nameInLayout === 'product.info.sku' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideStock = $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/product/hide_stock');
-
-        if ($hideStock && $nameInLayout === 'product.info.simple' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        if ($hideStock && $nameInLayout === 'product.info.configurable' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        if ($hideStock && $nameInLayout === 'product.info.grouped.stock' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        if ($hideStock && $nameInLayout === 'product.info.bundle' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        if ($hideStock && $nameInLayout === 'product.info.virtual' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        if ($hideStock && $nameInLayout === 'product.info.downloadable' && $block instanceof Template) {
-            $block->setTemplate(null);
-        }
-
-        $hideCrosssell = $this->storesHelper->getStoreConfigFlag('infrangible_pageelements/cart/hide_crosssell');
-
-        if ($hideCrosssell && $nameInLayout === 'checkout.cart.crosssell' && $block instanceof Template) {
-            $block->setTemplate(null);
+    /**
+     * Checks if the page of the block has the layout handle, for example "catalog_product_view".
+     *
+     * @param Template $block
+     * @param string $handle
+     *
+     * @return bool
+     */
+    private function hasHandle(Template $block, string $handle): bool
+    {
+        try {
+            return in_array($handle, $block->getLayout()->getUpdate()->getHandles(), true);
+        } catch (LocalizedException) {
+            return false;
         }
     }
 }

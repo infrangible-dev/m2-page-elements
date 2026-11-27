@@ -2,34 +2,41 @@
 
 declare(strict_types=1);
 
-namespace Infrangible\PageElements\Plugin\Catalog\Block\Product;
-
-use Infrangible\Core\Helper\Stores;
-
 /**
  * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
  * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ */
+
+namespace Infrangible\PageElements\Plugin\Catalog\Block\Product;
+
+use Infrangible\PageElements\Helper\Data;
+use Magento\Catalog\Block\Product\View as ProductView;
+
+/**
+ * Hides the quantity field of the product page.
  */
 class View
 {
-    /** @var Stores */
-    protected $storesHelper;
-
-    public function __construct(Stores $storesHelper)
+    /**
+     * @param Data $helper
+     */
+    public function __construct(protected Data $helper)
     {
-        $this->storesHelper = $storesHelper;
     }
 
     /**
-     * @noinspection PhpUnusedParameterInspection
+     * The quantity field is not rendered if the setting "Hide Qty" is switched on.
+     *
+     * @param ProductView $subject
+     * @param bool $result
+     *
+     * @return bool
+     *
+     * @noinspection PhpUnusedParameterInspection the signature of the plugin is given
      */
-    public function aroundShouldRenderQuantity(\Magento\Catalog\Block\Product\View $subject, callable $proceed): bool
+    public function afterShouldRenderQuantity(ProductView $subject, bool $result): bool
     {
-        if ($this->storesHelper->getStoreConfigFlag('infrangible_pageelements/product/hide_qty')) {
-            return false;
-        }
-
-        return $proceed();
+        return $result && ! $this->helper->isEnabled('product/hide_qty');
     }
 }

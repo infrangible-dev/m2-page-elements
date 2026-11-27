@@ -2,38 +2,41 @@
 
 declare(strict_types=1);
 
-namespace Infrangible\PageElements\Plugin\Catalog\ViewModel\Product\Checker;
-
-use Infrangible\Core\Helper\Stores;
-use Magento\Catalog\Api\Data\ProductInterface;
-
 /**
  * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
  * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ */
+
+namespace Infrangible\PageElements\Plugin\Catalog\ViewModel\Product\Checker;
+
+use Infrangible\PageElements\Helper\Data;
+use Magento\Catalog\ViewModel\Product\Checker\AddToCompareAvailability as Checker;
+
+/**
+ * Hides the links to compare products.
  */
 class AddToCompareAvailability
 {
-    /** @var Stores */
-    protected $storesHelper;
-
-    public function __construct(Stores $storesHelper)
+    /**
+     * @param Data $helper
+     */
+    public function __construct(protected Data $helper)
     {
-        $this->storesHelper = $storesHelper;
     }
 
     /**
-     * @noinspection PhpUnusedParameterInspection
+     * No product can be compared if the setting "Hide Compare" is switched on.
+     *
+     * @param Checker $subject
+     * @param bool $result
+     *
+     * @return bool
+     *
+     * @noinspection PhpUnusedParameterInspection the signature of the plugin is given
      */
-    public function aroundIsAvailableForCompare(
-        \Magento\Catalog\ViewModel\Product\Checker\AddToCompareAvailability $subject,
-        callable $proceed,
-        ProductInterface $product
-    ): bool {
-        if ($this->storesHelper->getStoreConfigFlag('infrangible_pageelements/product/hide_compare')) {
-            return false;
-        }
-
-        return $proceed($product);
+    public function afterIsAvailableForCompare(Checker $subject, bool $result): bool
+    {
+        return $result && ! $this->helper->isEnabled('product/hide_compare');
     }
 }
